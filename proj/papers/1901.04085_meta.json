@@ -1,0 +1,93 @@
+{
+  "paper_id": "1901.04085",
+  "title": "Passage Re-ranking with BERT",
+  "authors": [
+    "Rodrigo Nogueira",
+    "Kyunghyun Cho"
+  ],
+  "published": "2019-01-13",
+  "year": 2019,
+  "abstract": "Recently, neural models pretrained on a language modeling task, such as ELMo (Peters et al., 2017), OpenAI GPT (Radford et al., 2018), and BERT (Devlin et al., 2018), have achieved impressive results on various natural language processing tasks such as question-answering and natural language inference. In this paper, we describe a simple re-implementation of BERT for query-based passage re-ranking. Our system is the state of the art on the TREC-CAR dataset and the top entry in the leaderboard of the MS MARCO passage retrieval task, outperforming the previous state of the art by 27% (relative) in MRR@10. The code to reproduce our results is available at https://github.com/nyu-dl/dl4marco-bert",
+  "primary_category": "cs.IR",
+  "categories": [
+    "cs.IR",
+    "cs.CL",
+    "cs.LG"
+  ],
+  "topics": [
+    "Information Retrieval",
+    "Natural Language Processing",
+    "Machine Learning"
+  ],
+  "pdf_url": "https://arxiv.org/pdf/1901.04085.pdf",
+  "authors_norm": [
+    {
+      "key": "rodrigo nogueira",
+      "name": "Rodrigo Nogueira"
+    },
+    {
+      "key": "kyunghyun cho",
+      "name": "Kyunghyun Cho"
+    }
+  ],
+  "keywords": [
+    {
+      "key": "passage re ranking",
+      "name": "Passage Re-ranking"
+    },
+    {
+      "key": "bert",
+      "name": "BERT"
+    },
+    {
+      "key": "language modeling",
+      "name": "Language modeling"
+    },
+    {
+      "key": "question answering",
+      "name": "Question-answering"
+    },
+    {
+      "key": "natural language inference",
+      "name": "Natural language inference"
+    }
+  ],
+  "methods": [
+    {
+      "key": "elmo",
+      "name": "ELMo"
+    },
+    {
+      "key": "openai gpt",
+      "name": "OpenAI GPT"
+    },
+    {
+      "key": "bert",
+      "name": "BERT"
+    }
+  ],
+  "datasets": [
+    {
+      "key": "trec car",
+      "name": "TREC-CAR"
+    },
+    {
+      "key": "ms marco",
+      "name": "MS MARCO"
+    }
+  ],
+  "tasks": [
+    {
+      "key": "passage re ranking",
+      "name": "passage re-ranking"
+    },
+    {
+      "key": "question answering",
+      "name": "question-answering"
+    },
+    {
+      "key": "natural language inference",
+      "name": "natural language inference"
+    }
+  ]
+}

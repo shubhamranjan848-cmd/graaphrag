@@ -1,0 +1,141 @@
+{
+  "paper_id": "2005.11401",
+  "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+  "authors": [
+    "Patrick Lewis",
+    "Ethan Perez",
+    "Aleksandra Piktus",
+    "Fabio Petroni",
+    "Vladimir Karpukhin",
+    "Naman Goyal",
+    "Heinrich K\u00fcttler",
+    "Mike Lewis",
+    "Wen-tau Yih",
+    "Tim Rockt\u00e4schel",
+    "Sebastian Riedel",
+    "Douwe Kiela"
+  ],
+  "published": "2020-05-22",
+  "year": 2020,
+  "abstract": "Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks. However, their ability to access and precisely manipulate knowledge is still limited, and hence on knowledge-intensive tasks, their performance lags behind task-specific architectures. Additionally, providing provenance for their decisions and updating their world knowledge remain open research problems. Pre-trained models with a differentiable access mechanism to explicit non-parametric memory can overcome this issue, but have so far been only investigated for extractive downstream tasks. We explore a general-purpose fine-tuning recipe for retrieval-augmented generation (RAG) -- models which combine pre-trained parametric and non-parametric memory for language generation. We introduce RAG models where the parametric memory is a pre-trained seq2seq model and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever. We compare two RAG formulations, one which conditions on the same retrieved passages across the whole generated sequence, the other can use different passages per token. We fine-tune and evaluate our models on a wide range of knowledge-intensive NLP tasks and set the state-of-the-art on three open domain QA tasks, outperforming parametric seq2seq models and task-specific retrieve-and-extract architectures. For language generation tasks, we find that RAG models generate more specific, diverse and factual language than a state-of-the-art parametric-only seq2seq baseline.",
+  "primary_category": "cs.CL",
+  "categories": [
+    "cs.CL",
+    "cs.LG"
+  ],
+  "topics": [
+    "Natural Language Processing",
+    "Machine Learning"
+  ],
+  "pdf_url": "https://arxiv.org/pdf/2005.11401.pdf",
+  "authors_norm": [
+    {
+      "key": "patrick lewis",
+      "name": "Patrick Lewis"
+    },
+    {
+      "key": "ethan perez",
+      "name": "Ethan Perez"
+    },
+    {
+      "key": "aleksandra piktus",
+      "name": "Aleksandra Piktus"
+    },
+    {
+      "key": "fabio petroni",
+      "name": "Fabio Petroni"
+    },
+    {
+      "key": "vladimir karpukhin",
+      "name": "Vladimir Karpukhin"
+    },
+    {
+      "key": "naman goyal",
+      "name": "Naman Goyal"
+    },
+    {
+      "key": "heinrich k\u00fcttler",
+      "name": "Heinrich K\u00fcttler"
+    },
+    {
+      "key": "mike lewis",
+      "name": "Mike Lewis"
+    },
+    {
+      "key": "wen tau yih",
+      "name": "Wen-tau Yih"
+    },
+    {
+      "key": "tim rockt\u00e4schel",
+      "name": "Tim Rockt\u00e4schel"
+    },
+    {
+      "key": "sebastian riedel",
+      "name": "Sebastian Riedel"
+    },
+    {
+      "key": "douwe kiela",
+      "name": "Douwe Kiela"
+    }
+  ],
+  "keywords": [
+    {
+      "key": "retrieval augmented generation",
+      "name": "Retrieval-Augmented Generation"
+    },
+    {
+      "key": "parametric memory",
+      "name": "parametric memory"
+    },
+    {
+      "key": "non parametric memory",
+      "name": "non-parametric memory"
+    },
+    {
+      "key": "language generation",
+      "name": "language generation"
+    },
+    {
+      "key": "knowledge intensive nlp tasks",
+      "name": "knowledge-intensive NLP tasks"
+    },
+    {
+      "key": "differentiable access mechanism",
+      "name": "differentiable access mechanism"
+    }
+  ],
+  "methods": [
+    {
+      "key": "rag",
+      "name": "RAG"
+    },
+    {
+      "key": "seq2seq",
+      "name": "seq2seq"
+    },
+    {
+      "key": "dense vector index",
+      "name": "dense vector index"
+    },
+    {
+      "key": "neural retriever",
+      "name": "neural retriever"
+    }
+  ],
+  "datasets": [
+    {
+      "key": "wikipedia",
+      "name": "Wikipedia"
+    }
+  ],
+  "tasks": [
+    {
+      "key": "open domain qa",
+      "name": "open domain QA"
+    },
+    {
+      "key": "language generation",
+      "name": "language generation"
+    }
+  ]
+}

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphRAG // Research Knowledge Graph</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    /* -------------------------------------------------------------
+       STRICT BLACK & WHITE / BRUTALIST DESIGN
+       - ZERO gradients
+       - ZERO pill buttons (strictly sharp border-radius: 0px)
+       - High contrast typography & borders
+    ------------------------------------------------------------- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important; /* Enforce strictly NO pill/rounded borders */
+      background-image: none !important; /* Enforce strictly NO gradients */
+    }
+
+    :root {
+      --bg: #ffffff;
+      --fg: #000000;
+      --border: #000000;
+      --muted-bg: #f5f5f5;
+      --subtle-border: #cccccc;
+      --font-mono: "Consolas", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.4;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP HEADER */
+    header {
+      background: #000000;
+      color: #ffffff;
+      border-bottom: 2px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .stats-bar {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #bbbbbb;
+      display: flex;
+      gap: 16px;
+    }
+
+    .stats-bar span b {
+      color: #ffffff;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* BUTTONS: STRICTLY RECTANGULAR, B&W, NO PILLS, NO GRADIENTS */
+    button, .btn {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s ease, color 0.1s ease;
+    }
+
+    button:hover, .btn:hover {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    button:disabled, .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: #eeeeee;
+      color: #888888;
+      border-color: #cccccc;
+    }
+
+    .btn-dark {
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+    }
+
+    .btn-dark:hover {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+    }
+
+    /* MAIN CONTAINER: TWO COLUMNS */
+    .app-body {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 51px);
+      overflow: hidden;
+    }
+
+    /* LEFT: GRAPH CANVAS */
+    .graph-panel {
+      flex: 6;
+      border-right: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #ffffff;
+    }
+
+    .graph-toolbar {
+      padding: 8px 12px;
+      background: var(--muted-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .filters-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+
+    .filter-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .filter-item input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: #000000;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 4px;
+    }
+
+    input[type="text"], textarea {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border: 2px solid #000000;
+    }
+
+    #network-canvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      cursor: grab;
+    }
+
+    #network-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* NODE DETAILS DRAWER */
+    .node-drawer {
+      border-top: 2px solid var(--border);
+      background: #ffffff;
+      padding: 10px 14px;
+      max-height: 160px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      display: none;
+    }
+
+    .node-drawer.active {
+      display: block;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: bold;
+      border-bottom: 1px solid var(--subtle-border);
+      padding-bottom: 4px;
+    }
+
+    /* RIGHT: LLM ASSISTANT PANEL */
+    .chat-panel {
+      flex: 4;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      min-width: 380px;
+    }
+
+    .panel-header {
+      padding: 10px 14px;
+      background: #000000;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .presets-container {
+      padding: 8px 12px;
+      background: var(--muted-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-btn {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+      font-size: 10px;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+
+    .preset-btn:hover {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: #ffffff;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 95%;
+    }
+
+    .message.user {
+      align-self: flex-end;
+    }
+
+    .message.ai {
+      align-self: flex-start;
+      width: 100%;
+    }
+
+    .msg-sender {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #666666;
+    }
+
+    .msg-body {
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      border: 1px solid #000000;
+      word-break: break-word;
+    }
+
+    .message.user .msg-body {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    .message.ai .msg-body {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    .msg-body pre {
+      background: var(--muted-bg);
+      border: 1px solid var(--subtle-border);
+      padding: 8px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin: 8px 0;
+    }
+
+    .msg-body ul, .msg-body ol {
+      margin-left: 20px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* INPUT ROW */
+    .chat-input-area {
+      padding: 10px 12px;
+      border-top: 2px solid var(--border);
+      background: var(--muted-bg);
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input-area textarea {
+      flex: 1;
+      height: 48px;
+      resize: none;
+      font-family: var(--font-sans);
+      font-size: 12px;
+    }
+
+    /* INGESTION MODAL: STRICTLY MONOCHROME RECTANGULAR */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border: 3px solid #000000;
+      width: 600px;
+      max-width: 90vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      background: #000000;
+      color: #ffffff;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-body textarea {
+      height: 140px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      width: 100%;
+    }
+
+    .log-box {
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #000000;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 8px 12px;
+      height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--muted-bg);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* LOADING SPINNER IN B&W */
+    .loader {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #000000;
+      border-top-color: transparent;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <h1>[ GRAPHRAG // EXPLORER ]</h1>
+      <div class="stats-bar">
+        <span>PAPERS: <b id="stat-papers">-</b></span>
+        <span>AUTHORS: <b id="stat-authors">-</b></span>
+        <span>METHODS: <b id="stat-methods">-</b></span>
+        <span>DATASETS: <b id="stat-datasets">-</b></span>
+        <span>EDGES: <b id="stat-edges">-</b></span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button onclick="openIngestModal()">+ BATCH INGEST PAPERS</button>
+      <button onclick="loadGraph()">↻ REFRESH GRAPH</button>
+      <button onclick="resetGraphView()">FIT VIEW</button>
+    </div>
+  </header>
+
+  <!-- APP BODY -->
+  <div class="app-body">
+    <!-- GRAPH CANVAS -->
+    <div class="graph-panel">
+      <div class="graph-toolbar">
+        <div class="filters-group">
+          <span>SHOW:</span>
+          <label class="filter-item"><input type="checkbox" id="flt-Paper" checked onchange="applyFilters()"> Paper</label>
+          <label class="filter-item"><input type="checkbox" id="flt-Method" checked onchange="applyFilters()"> Method</label>
+          <label class="filter-item"><input type="checkbox" id="flt-Dataset" checked onchange="applyFilters()"> Dataset</label>
+          <label class="filter-item"><input type="checkbox" id="flt-Author" checked onchange="applyFilters()"> Author</label>
+          <label class="filter-item"><input type="checkbox" id="flt-Task" checked onchange="applyFilters()"> Task</label>
+          <label class="filter-item"><input type="checkbox" id="flt-Concept" checked onchange="applyFilters()"> Concept</label>
+        </div>
+        <div class="search-box">
+          <input type="text" id="node-search" placeholder="Search node..." onkeyup="searchNodes(event)">
+          <button onclick="searchNodes()">FIND</button>
+        </div>
+      </div>
+
+      <div id="network-canvas"></div>
+
+      <!-- NODE DETAILS DRAWER -->
+      <div id="node-drawer" class="node-drawer">
+        <div class="drawer-header">
+          <span id="drawer-title">NODE DETAILS</span>
+          <button onclick="closeDrawer()" style="padding: 2px 6px;">✕</button>
+        </div>
+        <div id="drawer-content">Click any node to view metadata and relationships.</div>
+      </div>
+    </div>
+
+    <!-- CHAT ASSISTANT -->
+    <div class="chat-panel">
+      <div class="panel-header">
+        <span>KNOWLEDGE GRAPH ASSISTANT (GEMINI)</span>
+        <span id="chat-status" style="font-size: 10px; color: #aaaaaa;">ONLINE</span>
+      </div>
+
+      <div class="presets-container">
+        <div style="width: 100%; font-size: 10px; font-weight: bold; margin-bottom: 2px; font-family: var(--font-mono);">PRESET QUERIES:</div>
+        <button class="preset-btn" onclick="sendPreset(this)">How are the papers in the graph connected?</button>
+        <button class="preset-btn" onclick="sendPreset(this)">What shared methods or architectures are used?</button>
+        <button class="preset-btn" onclick="sendPreset(this)">Compare Attention Is All You Need and BERT</button>
+        <button class="preset-btn" onclick="sendPreset(this)">What datasets are evaluated across papers?</button>
+      </div>
+
+      <div id="chat-messages" class="chat-messages">
+        <div class="message ai">
+          <div class="msg-sender">SYSTEM</div>
+          <div class="msg-body">
+            Knowledge Graph connected to Neo4j. Ask any question about the papers, shared methods, datasets, or how concepts interconnect.
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <textarea id="chat-input" placeholder="Ask about connections, methods, datasets... [Press Enter]" onkeydown="handleChatKey(event)"></textarea>
+        <button id="send-btn" class="btn-dark" onclick="sendChat()">SEND</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BATCH INGEST MODAL -->
+  <div id="ingest-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>BATCH INGEST PAPERS INTO NEO4J</span>
+        <button onclick="closeIngestModal()" class="btn-dark" style="padding: 2px 8px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 11px; font-family: var(--font-mono);">
+          Paste arXiv IDs separated by whitespace or newlines. The pipeline will automatically fetch metadata, extract entities with Gemini, chunk & embed the text, and write nodes & edges to Neo4j.
+        </p>
+        <textarea id="ingest-input" placeholder="e.g.&#10;2002.08909&#10;2004.04906&#10;2007.01282&#10;2009.02252"></textarea>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-family: var(--font-mono); font-size: 11px;">STATUS LOG:</span>
+          <span id="ingest-progress" style="font-family: var(--font-mono); font-size: 11px; font-weight: bold;">IDLE</span>
+        </div>
+        <div id="ingest-log" class="log-box">Ready.</div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeIngestModal()">CLOSE</button>
+        <button id="start-ingest-btn" class="btn-dark" onclick="startBatchIngest()">START INGESTION</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let network = null;
+    let rawNodes = [];
+    let rawEdges = [];
+    let allNodesDataSet = null;
+    let allEdgesDataSet = null;
+
+    // Default 40 arXiv papers list provided by user ready to paste
+    const DEFAULT_PAPERS_LIST = `2002.08909
+2004.04906
+2007.01282
+2009.02252
+1908.10084
+2004.12832
+2104.08821
+1901.04085
+2002.10957
+2104.05740
+2212.10496
+2112.09118
+2112.04426
+2208.03299
+2307.03172
+2310.11511
+2401.15884
+2305.06983
+2403.14403
+2309.15217
+2404.16130
+2408.08921
+2410.05779
+2405.14831
+2401.18059
+2210.03629
+2302.04761
+2407.21059
+2312.10997
+2402.19473
+2405.06211
+2309.01431
+2401.15391`;
+
+    // -------------------------------------------------------------------------
+    // INITIALIZATION
+    // -------------------------------------------------------------------------
+    window.addEventListener("DOMContentLoaded", () => {
+      loadStats();
+      loadGraph();
+      document.getElementById("ingest-input").value = DEFAULT_PAPERS_LIST;
+    });
+
+    // -------------------------------------------------------------------------
+    // STATS
+    // -------------------------------------------------------------------------
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+        document.getElementById("stat-papers").textContent = data.papers || 0;
+        document.getElementById("stat-authors").textContent = data.authors || 0;
+        document.getElementById("stat-methods").textContent = data.methods || 0;
+        document.getElementById("stat-datasets").textContent = data.datasets || 0;
+        document.getElementById("stat-edges").textContent = data.total_relationships || 0;
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // GRAPH VISUALIZATION (STRICT B&W STYLING, NO GRADIENTS)
+    // -------------------------------------------------------------------------
+    async function loadGraph() {
+      try {
+        const res = await fetch("/api/graph");
+        const data = await res.json();
+        rawNodes = data.nodes;
+        rawEdges = data.edges;
+
+        buildNetwork(rawNodes, rawEdges);
+        loadStats();
+      } catch (err) {
+        console.error("Failed to load graph:", err);
+      }
+    }
+
+    function buildNetwork(nodesData, edgesData) {
+      const container = document.getElementById("network-canvas");
+
+      // Format styled nodes according to B&W strict theme
+      const formattedNodes = nodesData.map(n => {
+        const type = n.node_type;
+        let shape = "box";
+        let bg = "#ffffff";
+        let fontColor = "#000000";
+        let border = "#000000";
+        let size = 16;
+        let borderWidth = 1;
+
+        if (type === "Paper") {
+          bg = "#000000";
+          fontColor = "#ffffff";
+          border = "#000000";
+          borderWidth = 2;
+          shape = "box";
+        } else if (type === "Method") {
+          bg = "#ffffff";
+          border = "#000000";
+          borderWidth = 2;
+          shape = "box";
+        } else if (type === "Dataset") {
+          bg = "#ffffff";
+          border = "#000000";
+          borderWidth = 1;
+          shape = "ellipse";
+        } else if (type === "Author") {
+          bg = "#ffffff";
+          border = "#444444";
+          borderWidth = 1;
+          shape = "circle";
+        } else {
+          bg = "#ffffff";
+          border = "#222222";
+          shape = "box";
+        }
+
+        return {
+          id: n.id,
+          label: n.label,
+          shape: shape,
+          color: {
+            background: bg,
+            border: border,
+            highlight: {
+              background: type === "Paper" ? "#222222" : "#000000",
+              border: "#000000"
+            }
+          },
+          font: {
+            color: fontColor,
+            face: "monospace",
+            size: 11
+          },
+          borderWidth: borderWidth,
+          margin: 6,
+          raw: n
+        };
+      });
+
+      const formattedEdges = edgesData.map(e => ({
+        id: e.id,
+        from: e.from,
+        to: e.to,
+        label: e.label,
+        font: {
+          color: "#444444",
+          face: "monospace",
+          size: 8,
+          strokeWidth: 0,
+          background: "#ffffff"
+        },
+        color: {
+          color: "#777777",
+          highlight: "#000000"
+        },
+        arrows: {
+          to: { enabled: true, scaleFactor: 0.6 }
+        },
+        smooth: {
+          type: "continuous"
+        }
+      }));
+
+      allNodesDataSet = new vis.DataSet(formattedNodes);
+      allEdgesDataSet = new vis.DataSet(formattedEdges);
+
+      const options = {
+        physics: {
+          solver: "forceAtlas2Based",
+          forceAtlas2Based: {
+            gravitationalConstant: -35,
+            centralGravity: 0.008,
+            springLength: 90,
+            springConstant: 0.08,
+            damping: 0.6
+          },
+          stabilization: { iterations: 120 }
+        },
+        interaction: {
+          hover: true,
+          navigationButtons: false,
+          keyboard: false
+        }
+      };
+
+      network = new vis.Network(container, { nodes: allNodesDataSet, edges: allEdgesDataSet }, options);
+
+      // Node click listener
+      network.on("click", (params) => {
+        if (params.nodes.length > 0) {
+          const clickedNodeId = params.nodes[0];
+          const nodeItem = allNodesDataSet.get(clickedNodeId);
+          showNodeDetails(nodeItem);
+        } else {
+          closeDrawer();
+        }
+      });
+    }
+
+    function applyFilters() {
+      if (!allNodesDataSet) return;
+
+      const activeTypes = {
+        Paper: document.getElementById("flt-Paper").checked,
+        Method: document.getElementById("flt-Method").checked,
+        Dataset: document.getElementById("flt-Dataset").checked,
+        Author: document.getElementById("flt-Author").checked,
+        Task: document.getElementById("flt-Task").checked,
+        Concept: document.getElementById("flt-Concept").checked
+      };
+
+      const nodesToUpdate = rawNodes.map(n => {
+        const isVisible = activeTypes[n.node_type] !== false;
+        return {
+          id: n.id,
+          hidden: !isVisible
+        };
+      });
+
+      allNodesDataSet.update(nodesToUpdate);
+    }
+
+    function resetGraphView() {
+      if (network) {
+        network.fit({ animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+      }
+    }
+
+    function searchNodes(event) {
+      if (event && event.key && event.key !== "Enter") return;
+      const term = document.getElementById("node-search").value.toLowerCase().trim();
+      if (!term || !network) return;
+
+      const matched = rawNodes.find(n => n.label.toLowerCase().includes(term));
+      if (matched) {
+        network.focus(matched.id, {
+          scale: 1.4,
+          animation: { duration: 400, easingFunction: "easeInOutQuad" }
+        });
+        network.selectNodes([matched.id]);
+        showNodeDetails(allNodesDataSet.get(matched.id));
+      } else {
+        alert("No node found matching: " + term);
+      }
+    }
+
+    function showNodeDetails(nodeItem) {
+      if (!nodeItem || !nodeItem.raw) return;
+      const raw = nodeItem.raw;
+      const drawer = document.getElementById("node-drawer");
+      const title = document.getElementById("drawer-title");
+      const content = document.getElementById("drawer-content");
+
+      title.textContent = `[${raw.node_type.toUpperCase()}] ${raw.label}`;
+
+      let html = `<div style="display:flex; flex-direction:column; gap:4px;">`;
+      if (raw.node_type === "Paper") {
+        html += `<div><b>Paper ID:</b> ${raw.paper_id}</div>`;
+        html += `<div><b>Year:</b> ${raw.year || "N/A"}</div>`;
+        html += `<div><b>ArXiv:</b> <a href="${raw.url}" target="_blank" style="color:#000000; text-decoration:underline;">${raw.url}</a></div>`;
+      } else {
+        html += `<div><b>Key:</b> ${raw.key}</div>`;
+        html += `<div><b>Name:</b> ${raw.name}</div>`;
+      }
+
+      // Find connected nodes
+      const connectedEdges = rawEdges.filter(e => e.from === raw.id || e.to === raw.id);
+      html += `<div style="margin-top:6px;"><b>Connections (${connectedEdges.length}):</b></div>`;
+      html += `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:2px;">`;
+      connectedEdges.forEach(e => {
+        const otherId = e.from === raw.id ? e.to : e.from;
+        const otherNode = rawNodes.find(n => n.id === otherId);
+        if (otherNode) {
+          html += `<span style="border:1px solid #000000; padding:1px 6px; font-size:10px; background:#f0f0f0;">${e.label}: ${otherNode.label}</span>`;
+        }
+      });
+      html += `</div></div>`;
+
+      content.innerHTML = html;
+      drawer.classList.add("active");
+    }
+
+    function closeDrawer() {
+      document.getElementById("node-drawer").classList.remove("active");
+    }
+
+    // -------------------------------------------------------------------------
+    // CHAT & GRAPHRAG (GEMINI)
+    // -------------------------------------------------------------------------
+    function handleChatKey(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    }
+
+    function sendPreset(btn) {
+      document.getElementById("chat-input").value = btn.textContent.trim();
+      sendChat();
+    }
+
+    async function sendChat() {
+      const input = document.getElementById("chat-input");
+      const query = input.value.trim();
+      if (!query) return;
+
+      appendMessage("USER", query);
+      input.value = "";
+
+      const sendBtn = document.getElementById("send-btn");
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<span class="loader"></span>';
+
+      const aiMsgDiv = appendMessage("AI", "Querying Neo4j vector index & graph traversal...");
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          aiMsgDiv.querySelector(".msg-body").textContent = "Error: " + data.error;
+        } else {
+          aiMsgDiv.querySelector(".msg-body").innerHTML = formatMarkdown(data.answer);
+
+          // Highlight relevant nodes on graph
+          if (data.highlight_nodes && data.highlight_nodes.length > 0 && network) {
+            const validIds = data.highlight_nodes.filter(id => allNodesDataSet.get(id));
+            if (validIds.length > 0) {
+              network.selectNodes(validIds);
+              network.fit({
+                nodes: validIds,
+                animation: { duration: 500, easingFunction: "easeInOutQuad" }
+              });
+            }
+          }
+        }
+      } catch (err) {
+        aiMsgDiv.querySelector(".msg-body").textContent = "Request failed: " + err;
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "SEND";
+      }
+    }
+
+    function appendMessage(sender, text) {
+      const container = document.getElementById("chat-messages");
+      const msg = document.createElement("div");
+      msg.className = `message ${sender.toLowerCase()}`;
+      msg.innerHTML = `
+        <div class="msg-sender">${sender}</div>
+        <div class="msg-body">${formatMarkdown(text)}</div>
+      `;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+      return msg;
+    }
+
+    function formatMarkdown(text) {
+      if (!text) return "";
+      let html = text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+        .replace(/\*(.*?)\*/g, "<i>$1</i>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/\n\n/g, "<br><br>")
+        .replace(/\n/g, "<br>");
+      return html;
+    }
+
+    // -------------------------------------------------------------------------
+    // BATCH INGESTION MODAL
+    // -------------------------------------------------------------------------
+    function openIngestModal() {
+      document.getElementById("ingest-modal").classList.add("active");
+      checkIngestStatus();
+    }
+
+    function closeIngestModal() {
+      document.getElementById("ingest-modal").classList.remove("active");
+    }
+
+    let pollInterval = null;
+
+    async function startBatchIngest() {
+      const text = document.getElementById("ingest-input").value.trim();
+      if (!text) {
+        alert("Please paste arXiv IDs first.");
+        return;
+      }
+
+      const paperIds = text.split(/\s+/).filter(Boolean);
+      const startBtn = document.getElementById("start-ingest-btn");
+      startBtn.disabled = true;
+
+      try {
+        const res = await fetch("/api/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paper_ids: paperIds })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert(data.error);
+          startBtn.disabled = false;
+          return;
+        }
+
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(checkIngestStatus, 3000);
+      } catch (err) {
+        alert("Failed to start ingestion: " + err);
+        startBtn.disabled = false;
+      }
+    }
+
+    async function checkIngestStatus() {
+      try {
+        const res = await fetch("/api/ingest/status");
+        const status = await res.json();
+
+        const logBox = document.getElementById("ingest-log");
+        const progress = document.getElementById("ingest-progress");
+        const startBtn = document.getElementById("start-ingest-btn");
+
+        logBox.textContent = status.log.join("\n");
+        logBox.scrollTop = logBox.scrollHeight;
+
+        if (status.is_running) {
+          progress.textContent = `RUNNING (${status.completed}/${status.total}) - ${status.current_paper}`;
+          startBtn.disabled = true;
+        } else {
+          progress.textContent = status.total > 0 ? `FINISHED (${status.completed}/${status.total})` : "IDLE";
+          startBtn.disabled = false;
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+          // Auto-refresh graph and stats
+          loadStats();
+          loadGraph();
+        }
+      } catch (err) {
+        console.error("Failed to check status:", err);
+      }
+    }
+  </script>
+</body>
+</html>
